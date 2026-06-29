@@ -5,7 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ClearPath Health</title>
 <!-- Supabase JS SDK -->
-<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// Load Supabase dynamically with multiple fallbacks
+window._supabaseReady = new Promise(function(resolve) {
+  var urls = [
+    'https://esm.sh/@supabase/supabase-js@2',
+  ];
+  function tryLoad(i) {
+    if(i >= urls.length){ resolve(false); return; }
+    var s = document.createElement('script');
+    s.src = urls[i];
+    s.type = 'module';
+    s.onload = function(){ resolve(true); };
+    s.onerror = function(){ tryLoad(i+1); };
+    document.head.appendChild(s);
+  }
+  tryLoad(0);
+});
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
 :root{
@@ -1215,7 +1232,7 @@ function demoAppeal(d){
    2. Copy "Project URL" and "anon public" key
    3. Paste below
    ════════════════════════════════════════════════ */
-var SUPABASE_URL  = 'https://nuybyvryvrgomzkcxlnk.supabase.co';   // e.g. https://abcdef.supabase.co
+var SUPABASE_URL  = 'https://nuybyvryvrgomzkcxlnk.supabase.co';
 var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51eWJ5dnJ5dnJnb216a2N4bG5rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NTI0MTYsImV4cCI6MjA5ODMyODQxNn0.2tzsWm8o05JiWrTgnP8xL34WOlFUxYrMke0rUoJYNMM';
 
 var supabase = null;
@@ -1225,12 +1242,12 @@ function initSupabase(){
   var configured = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON !== 'YOUR_SUPABASE_ANON_KEY';
   if(!configured){
     document.getElementById('config-bar').classList.add('show');
-    // Run in demo mode without auth
     hideAuthOverlay();
     return;
   }
-  try{
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  import('https://esm.sh/@supabase/supabase-js@2').then(function(mod){
+    try{
+    supabase = mod.createClient(SUPABASE_URL, SUPABASE_ANON);
     supabase.auth.onAuthStateChange(function(event, session){
       if(session && session.user){
         currentUser = session.user;
@@ -1252,8 +1269,12 @@ function initSupabase(){
     });
   } catch(e){
     console.error('Supabase init failed:', e);
-    hideAuthOverlay(); // fallback: allow access
+    hideAuthOverlay();
   }
+  }).catch(function(e){
+    console.error('Supabase load failed:', e);
+    hideAuthOverlay();
+  });
 }
 
 function setUserUI(user){
